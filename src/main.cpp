@@ -23,7 +23,7 @@
 #define USB_READ_INTERVAL 300
 #define WIEGAND_BIT_LENGTH 26
 #define DEVICE_DEBUG 1
-#define SEPARATOR_LENGTH 51
+#define SEPARATOR_LENGTH 57
 
 void blinkLed();
 
@@ -137,22 +137,23 @@ void readUSB() {
 void processData(char *stringValue) {
     char buffer[64];
     uint64_t numericIdentifier = strtoull(stringValue, nullptr, 10);
+    uint64_t alteredNumericIdentifier = numericIdentifier % valueModulo;
     if (numericIdentifier > 0) {
         if (DEVICE_DEBUG) {
             memset(buffer, '-', sizeof(buffer));
             strcpy(buffer + SEPARATOR_LENGTH, "\n\0");
             Serial.print(buffer);
             memset(buffer, '\0', sizeof(buffer));
-            sprintf(buffer, "Received string:         %s", stringValue);
+            sprintf(buffer, "Received string:               %s", stringValue);
             Serial.print(buffer);
-            sprintf(buffer, "Converted numeric value: %llu", numericIdentifier);
+            sprintf(buffer, "Converted numeric value:       %llu\t(0x%08X)", numericIdentifier, numericIdentifier);
             Serial.println(buffer);
-            sprintf(buffer, "Altered value:           %llu", numericIdentifier % valueModulo);
+            sprintf(buffer, "Altered value:                 %llu\t(0x%08X)", alteredNumericIdentifier, alteredNumericIdentifier);
             Serial.println(buffer);
-            Serial.print("Sending wiegand binary:  ");
+            sprintf(buffer, "Sending wiegand %d bit binary: ", WIEGAND_BIT_LENGTH);
+            Serial.print(buffer);
         }
-
-        sendWiegand(numericIdentifier);
+        sendWiegand(alteredNumericIdentifier);
     }
 }
 
