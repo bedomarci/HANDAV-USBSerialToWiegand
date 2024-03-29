@@ -20,9 +20,10 @@
 #define BLINK_BOOT 5
 #define BLINK_CONNECT 3
 #define BLINK_TRANSMIT 2
-#define USB_READ_INTERVAL 200
+#define USB_READ_INTERVAL 300
 #define WIEGAND_BIT_LENGTH 26
 #define DEVICE_DEBUG 1
+#define SEPARATOR_LENGTH 51
 
 void blinkLed();
 
@@ -34,14 +35,18 @@ void readUSB();
 
 void sendWiegand(uint64_t data);
 
+void processData(char *stringValue);
+
 USB Usb;
 FTDIAsync FtdiAsync;
 FTDI Ftdi(&Usb, &FtdiAsync);
-WiegandOut wiegandOut(PIN_WIEGAND_D0, PIN_WIEGAND_D1, true);
+WiegandOut wiegandOut(PIN_WIEGAND_D0, PIN_WIEGAND_D1, DEVICE_DEBUG);
 Scheduler ts;
 
 
 bool isFTDIDeviceConnected = false;
+
+uint32_t valueModulo = 0;
 
 
 Task tBlinkLed(BLINK_SPEED, BLINK_BOOT * 2, &blinkLed, &ts);
@@ -52,6 +57,8 @@ Task tUSBRead(USB_READ_INTERVAL, TASK_FOREVER, &readUSB, &ts, true);
 void setup() {
     //PIN configuration
     pinMode(PIN_LED, OUTPUT);
+
+    valueModulo = pow(10, NUM_OF_CROPPED_DIGITS);
 
     Serial.begin(115200);
     Serial.println(F("Start"));
@@ -112,13 +119,7 @@ void readUSB() {
 
         if (rcode == hrSUCCESS) {
             if ((int) rcvd > 2) {
-                uint64_t numericIdentifier = strtoull((char *) (buf + 2), nullptr, 10);
-                if (numericIdentifier) {
-                    sendWiegand(numericIdentifier);
-                }
-//                Serial.println((char *) (buf + 2));
-//                Serial.println(numericIdentifier);
-//                Serial.println("--------");
+                processData((char *) (buf + 2));
             }
         }
     }
@@ -133,8 +134,31 @@ void readUSB() {
     }
 }
 
+void processData(char *stringValue) {
+    char buffer[64];
+    uint64_t numericIdentifier = strtoull(stringValue, nullptr, 10);
+    if (numericIdentifier > 0) {
+        if (DEVICE_DEBUG) {
+            memset(buffer, '-', sizeof(buffer));
+            strcpy(buffer + SEPARATOR_LENGTH, "\n\0");
+            Serial.print(buffer);
+            memset(buffer, '\0', sizeof(buffer));
+            sprintf(buffer, "Received string:         %s", stringValue);
+            Serial.print(buffer);
+            sprintf(buffer, "Converted numeric value: %llu", numericIdentifier);
+            Serial.println(buffer);
+            sprintf(buffer, "Altered value:           %llu", numericIdentifier % valueModulo);
+            Serial.println(buffer);
+            Serial.print("Sending wiegand binary:  ");
+        }
+
+        sendWiegand(numericIdentifier);
+    }
+}
+
 void sendWiegand(uint64_t data) {
-    wiegandOut.send(data, WIEGAND_BIT_LENGTH, DEVICE_DEBUG);
+    bool useFacilityCode = true;
+    wiegandOut.send(data, WIEGAND_BIT_LENGTH, useFacilityCode);
     blink(BLINK_TRANSMIT);
 
 //    shell_print_pm(PSTR("Wiegand send: "));
