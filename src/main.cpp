@@ -21,7 +21,8 @@
 #define BLINK_CONNECT 3
 #define BLINK_TRANSMIT 2
 #define USB_READ_INTERVAL 300
-#define WIEGAND_BIT_LENGTH 26
+#define WIEGAND_BIT_LENGTH 64
+//#define WIEGAND_BIT_LENGTH 26
 #define DEVICE_DEBUG 1
 #define SEPARATOR_LENGTH 57
 
@@ -137,7 +138,7 @@ void readUSB() {
 void processData(char *stringValue) {
     char buffer[64];
     uint64_t numericIdentifier = strtoull(stringValue, nullptr, 10);
-    uint64_t alteredNumericIdentifier = numericIdentifier % valueModulo;
+//    uint64_t alteredNumericIdentifier = numericIdentifier % valueModulo;
     if (numericIdentifier > 0) {
         if (DEVICE_DEBUG) {
             memset(buffer, '-', sizeof(buffer));
@@ -148,17 +149,19 @@ void processData(char *stringValue) {
             Serial.print(buffer);
             sprintf(buffer, "Converted numeric value:       %llu\t(0x%08X)", numericIdentifier, numericIdentifier);
             Serial.println(buffer);
-            sprintf(buffer, "Altered value:                 %llu\t(0x%08X)", alteredNumericIdentifier, alteredNumericIdentifier);
-            Serial.println(buffer);
+//            sprintf(buffer, "Altered value:                 %llu\t(0x%08X)", alteredNumericIdentifier, alteredNumericIdentifier);
+//            Serial.println(buffer);
+            Serial.println("Method = 64 bit - no conversion");
             sprintf(buffer, "Sending wiegand %d bit binary: ", WIEGAND_BIT_LENGTH);
             Serial.print(buffer);
         }
-        sendWiegand(alteredNumericIdentifier);
+//        sendWiegand(alteredNumericIdentifier);
+        sendWiegand(numericIdentifier);
     }
 }
 
 void sendWiegand(uint64_t data) {
-    bool useFacilityCode = true;
+    bool useFacilityCode = false;
     wiegandOut.send(data, WIEGAND_BIT_LENGTH, useFacilityCode);
     blink(BLINK_TRANSMIT);
 
