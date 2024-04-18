@@ -2,11 +2,7 @@ import subprocess
 import time
 import msvcrt
 counter = 0
-# print('1')
-# key = msvcrt.getch()
-# if (key == b'q'):
-#     print(key)
-# print('2')
+
 while True:
     start_time = time.time()
     counter += 1
@@ -16,9 +12,9 @@ while True:
     print(result.stdout)
     end_time = time.time()
     print("Futasi ido: %d mp." % (end_time-start_time))
-    print("A folytatashoz nyomj le egy billenytyut. Kilepes: q")
-    key = msvcrt.getch()
-    if key == b'q':
+    key = input("A folytatashoz nyomj le egy billenytyut. Kilepes q.\n")
+    # key = msvcrt.getch()
+    if key == 'q':
         break
 
 
